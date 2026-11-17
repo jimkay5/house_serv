@@ -15,7 +15,7 @@ function PropertyDetailsPage() {
   const property =
     properties.find((item) => item.id === Number(id)) ||
     agentProperties.find(
-      (item) => item.id === Number(id) && item.listingStatus === "Approved"
+      (item) => item.id === Number(id) && item.listingStatus === "Approved",
     );
 
   if (!property) {
@@ -36,7 +36,7 @@ function PropertyDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-6 py-12">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-7xl">
         <button
           onClick={() => navigate(-1)}
@@ -52,14 +52,16 @@ function PropertyDetailsPage() {
             propertyName={property.name}
           />
 
-          <div className="p-8">
-            <span className="rounded-full bg-[#174C3C] px-4 py-2 text-xs font-semibold text-white">
-              {property.status}
-            </span>
+          <div className="p-4 sm:p-6 md:p-8">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-[#174C3C] px-4 py-2 text-xs font-semibold text-white">
+                {property.status}
+              </span>
 
-            <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-[#174C3C] shadow-sm">
-              {property.type}
-            </span>
+              <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-[#174C3C] shadow-sm">
+                {property.type}
+              </span>
+            </div>
 
             <div className="mt-6 flex flex-col justify-between gap-5 md:flex-row md:items-start">
               <div>
@@ -82,8 +84,10 @@ function PropertyDetailsPage() {
             </div>
 
             <div
-              className={`grid gap-4 ${
-                property.type === "Land" ? "grid-cols-1" : "grid-cols-3"
+              className={`grid gap-3 sm:gap-4 ${
+                property.type === "Land"
+                  ? "grid-cols-1"
+                  : "grid-cols-1 sm:grid-cols-3"
               }`}
             >
               {property.type !== "Land" && (
@@ -118,6 +122,35 @@ function PropertyDetailsPage() {
                 {property.description}
               </p>
             </div>
+
+            {/* Other Property Features */}
+            {property.customFeatures?.filter((feature) => feature.trim())
+              .length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-xl font-bold text-[#252925]">
+                  Other Features
+                </h2>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                  {property.customFeatures
+                    .filter((feature) => feature.trim())
+                    .map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 rounded-xl bg-[#E5EBE4] p-4"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#174C3C] text-sm text-white">
+                          ✓
+                        </span>
+
+                        <span className="font-medium text-[#252925]">
+                          {feature}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
 
             <button
               onClick={() => navigate(`/properties/${property.id}/inspection`)}

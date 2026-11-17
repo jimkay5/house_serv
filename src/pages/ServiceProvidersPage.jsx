@@ -1,25 +1,42 @@
 import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
 import {
   MapPin,
   BriefcaseBusiness,
   ArrowLeft,
   ArrowRight,
+  Search,
   Users,
+  Star,
 } from "lucide-react";
 
 import services from "../data/services";
 import { useMarketplaceProviders } from "../context/useMarketplaceProviders";
+import { useReviews } from "../context/useReviews";
 
 function ServiceProvidersPage() {
   const { id } = useParams();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const providers = useMarketplaceProviders();
+  const { reviews } = useReviews();
 
   const service = services.find((item) => item.id === Number(id));
 
   const serviceProviders = providers.filter(
-    (provider) => provider.serviceId === Number(id)
+    (provider) => provider.serviceId === Number(id),
   );
+
+  const filteredProviders = serviceProviders.filter((provider) => {
+    const search = searchTerm.trim().toLowerCase();
+
+    return (
+      provider.name?.toLowerCase().includes(search) ||
+      provider.location?.toLowerCase().includes(search) ||
+      provider.experience?.toLowerCase().includes(search) ||
+      provider.description?.toLowerCase().includes(search)
+    );
+  });
 
   if (!service) {
     return (
@@ -37,7 +54,7 @@ function ServiceProvidersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-6 py-16">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-10 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-7xl">
         <Link
           to={`/services/${id}`}
@@ -62,7 +79,7 @@ function ServiceProvidersPage() {
           </p>
         </div>
 
-        <div className="mb-8 flex items-center gap-3 rounded-xl bg-white p-5 shadow-sm">
+        <div className="mb-8 flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm sm:p-5">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#174C3C]/10 text-[#174C3C]">
             <Users size={23} />
           </div>
@@ -75,56 +92,106 @@ function ServiceProvidersPage() {
           </div>
         </div>
 
-        {serviceProviders.length > 0 ? (
+        <div className="mb-8 flex min-w-0 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 shadow-sm sm:px-5">
+          <Search size={20} className="text-[#174C3C]" />
+
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search providers by name, location or experience..."
+            className="w-full bg-transparent py-4 text-sm outline-none"
+          />
+        </div>
+
+        {filteredProviders.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {serviceProviders.map((provider) => (
-              <article
-                key={provider.id}
-                className="rounded-2xl bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#174C3C]/10 text-[#174C3C]">
-                  <BriefcaseBusiness size={25} />
-                </div>
+            {filteredProviders.map((provider) => {
+              const providerReviews = reviews.filter(
+                (review) => String(review.providerId) === String(provider.id),
+              );
 
-                <h2 className="mt-6 text-xl font-bold text-[#252925]">
-                  {provider.name}
-                </h2>
+              const averageRating =
+                providerReviews.length > 0
+                  ? (
+                      providerReviews.reduce(
+                        (total, review) => total + Number(review.rating),
+                        0,
+                      ) / providerReviews.length
+                    ).toFixed(1)
+                  : null;
 
-                <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
-                  <MapPin size={16} />
-                  {provider.location}
-                </div>
-
-                <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-                  <BriefcaseBusiness size={16} />
-                  {provider.experience}
-                </div>
-
-                <p className="mt-5 min-h-16 text-sm leading-6 text-gray-600">
-                  {provider.description}
-                </p>
-
-                <Link
-                  to={`/providers/${provider.id}`}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#174C3C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#10382C]"
+              return (
+                <article
+                  key={provider.id}
+                  className="min-w-0 rounded-2xl bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-7"
                 >
-                  View provider
-                  <ArrowRight size={17} />
-                </Link>
-              </article>
-            ))}
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#174C3C]/10 text-[#174C3C]">
+                    <BriefcaseBusiness size={25} />
+                  </div>
+
+                  <h2 className="mt-6 text-xl font-bold text-[#252925]">
+                    {provider.name}
+                  </h2>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    {averageRating ? (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Star size={17} fill="#D9A441" color="#D9A441" />
+                          <span className="text-sm font-bold text-[#252925]">
+                            {averageRating}
+                          </span>
+                        </div>
+
+                        <span className="text-xs text-gray-500">
+                          ({providerReviews.length}{" "}
+                          {providerReviews.length === 1 ? "review" : "reviews"})
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        No reviews yet
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex min-w-0 items-start gap-2 text-sm text-gray-500">
+                    <MapPin size={16} className="mt-0.5 shrink-0" />
+                    <span className="wrap-break-word">{provider.location}</span>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+                    <BriefcaseBusiness size={16} />
+                    {provider.experience}
+                  </div>
+
+                  <p className="mt-5 min-h-16 text-sm leading-6 text-gray-600">
+                    {provider.description}
+                  </p>
+
+                  <Link
+                    to={`/providers/${provider.id}`}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#174C3C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#10382C]"
+                  >
+                    View provider
+                    <ArrowRight size={17} />
+                  </Link>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="rounded-2xl bg-white px-6 py-16 text-center shadow-sm">
             <Users size={40} className="mx-auto text-[#174C3C]/50" />
 
-            <h2 className="mt-4 text-xl font-bold text-[#252925]">
-              No providers available yet
-            </h2>
+            {searchTerm.trim()
+              ? "No matching providers found"
+              : "No providers available yet"}
 
-            <p className="mt-2 text-sm text-gray-500">
-              We're working on bringing more professionals to this category.
-            </p>
+            {searchTerm.trim()
+              ? "Try searching with another name, location or keyword."
+              : "We're working on bringing more professionals to this category."}
           </div>
         )}
 

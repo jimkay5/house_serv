@@ -10,28 +10,46 @@ import {
 } from "lucide-react";
 
 import { useInspections } from "../context/useInspections";
+import { useProperties } from "../context/useProperties";
 
 function AgentDashboard() {
   const { inspections } = useInspections();
 
-  const totalInspections = inspections.length;
+  const { agentProperties } = useProperties();
 
-  const pendingInspections = inspections.filter(
-    (inspection) => inspection.status === "Pending"
+  const currentUser = JSON.parse(localStorage.getItem("houseServUser") || "{}");
+
+  const myProperties = agentProperties.filter(
+    (property) =>
+      property.agentEmail?.toLowerCase() === currentUser.email?.toLowerCase(),
+  );
+
+  const myPropertyIds = myProperties.map((property) => property.id);
+
+  const myInspections = inspections.filter(
+    (inspection) =>
+      myPropertyIds.includes(inspection.propertyId) ||
+      inspection.agentId?.toLowerCase() === currentUser.email?.toLowerCase(),
+  );
+
+  const totalInspections = myInspections.length;
+
+  const pendingInspections = myInspections.filter(
+    (inspection) => inspection.status === "Pending",
   ).length;
 
-  const completedInspections = inspections.filter(
-    (inspection) => inspection.status === "Completed"
+  const completedInspections = myInspections.filter(
+    (inspection) => inspection.status === "Completed",
   ).length;
 
-  const cancelledInspections = inspections.filter(
-    (inspection) => inspection.status === "Cancelled"
+  const cancelledInspections = myInspections.filter(
+    (inspection) => inspection.status === "Cancelled",
   ).length;
 
   const stats = [
     {
       title: "Properties Listed",
-      value: 0,
+      value: myProperties.length,
       icon: House,
     },
     {
@@ -52,7 +70,7 @@ function AgentDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-5 py-10 sm:px-8">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-8 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -70,10 +88,10 @@ function AgentDashboard() {
         </div>
 
         {/* Verification Notice */}
-        <div className="mb-8 flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <div className="mb-8 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:gap-4 sm:p-5">
           <ShieldCheck className="mt-1 shrink-0 text-amber-600" size={25} />
 
-          <div>
+          <div className="min-w-0">
             <h2 className="font-bold text-amber-900">Agent verification</h2>
 
             <p className="mt-1 text-sm leading-6 text-amber-800">
@@ -91,7 +109,7 @@ function AgentDashboard() {
             return (
               <div
                 key={stat.title}
-                className="rounded-2xl bg-white p-6 shadow-sm"
+                className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-6"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#174C3C]/10">
                   <Icon size={23} className="text-[#174C3C]" />
@@ -140,13 +158,13 @@ function AgentDashboard() {
           </div>
 
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-6">
               <Clock className="text-amber-500" size={25} />
               <h3 className="mt-4 text-2xl font-bold">{pendingInspections}</h3>
               <p className="mt-1 text-sm text-gray-500">Pending requests</p>
             </div>
 
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-6">
               <CheckCircle className="text-green-600" size={25} />
               <h3 className="mt-4 text-2xl font-bold">
                 {completedInspections}
@@ -156,7 +174,7 @@ function AgentDashboard() {
               </p>
             </div>
 
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-6">
               <XCircle className="text-red-500" size={25} />
               <h3 className="mt-4 text-2xl font-bold">
                 {cancelledInspections}
@@ -170,7 +188,7 @@ function AgentDashboard() {
 
         {/* Property Listings */}
 
-        <section className="mt-4 rounded-2xl bg-white p-6 shadow-sm sm:p-8">
+        <section className="mt-4 rounded-2xl bg-white p-5 shadow-sm sm:p-6 md:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-[#252925]">
@@ -189,6 +207,60 @@ function AgentDashboard() {
               <ArrowRight size={18} />
             </Link>
           </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl bg-[#F7F3EA] p-5">
+              <p className="text-sm text-gray-500">Total listings</p>
+              <h3 className="mt-2 text-2xl font-bold text-[#252925]">
+                {myProperties.length}
+              </h3>
+            </div>
+
+            <div className="rounded-xl bg-[#F7F3EA] p-5">
+              <p className="text-sm text-gray-500">Approved listings</p>
+              <h3 className="mt-2 text-2xl font-bold text-[#252925]">
+                {
+                  myProperties.filter(
+                    (property) => property.listingStatus === "Approved",
+                  ).length
+                }
+              </h3>
+            </div>
+
+            <div className="rounded-xl bg-[#F7F3EA] p-5">
+              <p className="text-sm text-gray-500">Awaiting approval</p>
+              <h3 className="mt-2 text-2xl font-bold text-[#252925]">
+                {
+                  myProperties.filter(
+                    (property) => property.listingStatus === "Pending Review",
+                  ).length
+                }
+              </h3>
+            </div>
+          </div>
+
+          {myProperties.length === 0 && (
+            <div className="mt-6 rounded-xl border border-dashed border-gray-300 px-6 py-10 text-center">
+              <House size={36} className="mx-auto text-[#174C3C]/50" />
+
+              <h3 className="mt-4 text-lg font-bold text-[#252925]">
+                No property listings yet
+              </h3>
+
+              <p className="mt-2 text-sm text-gray-500">
+                Start by adding your first property. Your submitted listings
+                will appear here.
+              </p>
+
+              <Link
+                to="/dashboard/agent/properties/new"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#174C3C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#103A2D]"
+              >
+                <House size={17} />
+                Add your first property
+              </Link>
+            </div>
+          )}
         </section>
       </div>
     </div>

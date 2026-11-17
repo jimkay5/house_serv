@@ -17,6 +17,8 @@ function readImageAsDataURL(file) {
 
 function AddPropertyPage() {
   const [images, setImages] = useState([]);
+  const [customFeatures, setCustomFeatures] = useState([]);
+  const [editingFeatureIndex, setEditingFeatureIndex] = useState(null);
   const [propertyType, setPropertyType] = useState("Apartment");
   const [listingType, setListingType] = useState("For Rent");
   const { agentProperties, addProperty, updateProperty } = useProperties();
@@ -53,21 +55,79 @@ function AddPropertyPage() {
 
     setPropertyType(editingProperty.type || "Apartment");
     setListingType(editingProperty.status || "For Rent");
+    setCustomFeatures(editingProperty.customFeatures || []);
 
     setExistingImages(
       editingProperty.images ||
         (editingProperty.image
           ? [{ src: editingProperty.image, label: "Property image" }]
-          : [])
+          : []),
     );
   }, [editingProperty]);
 
   const formRef = useRef(null);
   const [message, setMessage] = useState("");
 
+  function validateProperty(formData) {
+    const name = formData.get("name")?.trim();
+    const description = formData.get("description")?.trim();
+    const size = formData.get("size")?.trim();
+    const location = formData.get("location")?.trim();
+    const price = Number(formData.get("price"));
+    const bedrooms = formData.get("bedrooms");
+    const bathrooms = formData.get("bathrooms");
+
+    if (!name || name.length < 3) {
+      return "Property name must contain at least 3 characters.";
+    }
+
+    if (!description || description.length < 20) {
+      return "Please provide a description of at least 20 characters.";
+    }
+
+    if (!size) {
+      return "Please enter the property size.";
+    }
+
+    if (!location || location.length < 3) {
+      return "Please enter a valid property location.";
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      return "Please enter a valid property price.";
+    }
+
+    if (propertyType !== "Land") {
+      if (bedrooms !== "" && Number(bedrooms) < 0) {
+        return "Bedrooms cannot be negative.";
+      }
+
+      if (bathrooms !== "" && Number(bathrooms) < 0) {
+        return "Bathrooms cannot be negative.";
+      }
+    }
+
+    if (existingImages.length === 0 && images.length === 0) {
+      return "Please upload at least one property image.";
+    }
+
+    return "";
+  }
+
   async function saveProperty(listingStatus) {
     try {
       const formData = new FormData(formRef.current);
+
+      if (listingStatus === "Pending Review") {
+        const validationError = validateProperty(formData);
+
+        if (validationError) {
+          setMessage(validationError);
+          return;
+        }
+      }
+
+      setMessage("");
 
       const hasInformation =
         formData.get("name")?.trim() ||
@@ -80,7 +140,7 @@ function AddPropertyPage() {
 
       if (listingStatus === "Draft" && !hasInformation) {
         setMessage(
-          "Please enter at least one property detail before saving a draft."
+          "Please enter at least one property detail before saving a draft.",
         );
         return;
       }
@@ -89,7 +149,7 @@ function AddPropertyPage() {
         images.map(async (image) => ({
           src: await readImageAsDataURL(image),
           label: image.name,
-        }))
+        })),
       );
 
       const allImages = [...existingImages, ...newImages];
@@ -104,10 +164,21 @@ function AddPropertyPage() {
         location: formData.get("location"),
         bedrooms: formData.get("bedrooms") || "",
         bathrooms: formData.get("bathrooms") || "",
+        customFeatures: customFeatures
+          .map((feature) => feature.trim())
+          .filter(Boolean),
         size: formData.get("size"),
         image: allImages[0]?.src || "",
         images: allImages,
-        agentId: editingProperty?.agentId || "demo-agent",
+        agentId:
+          editingProperty?.agentId ||
+          JSON.parse(localStorage.getItem("houseServUser") || "{}").email ||
+          "demo-agent",
+
+        agentEmail:
+          editingProperty?.agentEmail ||
+          JSON.parse(localStorage.getItem("houseServUser") || "{}").email ||
+          "",
       };
 
       if (isEditing) {
@@ -123,7 +194,7 @@ function AddPropertyPage() {
         setMessage(
           listingStatus === "Draft"
             ? "Your property has been saved as a draft!"
-            : "Your property has been submitted for admin approval!"
+            : "Your property has been submitted for admin approval!",
         );
       }
     } catch (error) {
@@ -141,6 +212,37 @@ function AddPropertyPage() {
     const selectedImages = Array.from(event.target.files);
 
     setImages((currentImages) => [...currentImages, ...selectedImages]);
+  }
+
+  function addCustomFeature() {
+    setCustomFeatures((current) => [...current, ""]);
+  }
+
+  function updateCustomFeature(index, value) {
+    setCustomFeatures((current) =>
+      current.map((feature, i) => (i === index ? value : feature)),
+    );
+  }
+
+  function removeCustomFeature(index) {
+    setCustomFeatures((current) => current.filter((_, i) => i !== index));
+  }
+
+  function confirmCustomFeature(index) {
+    const feature = customFeatures[index]?.trim();
+
+    if (!feature) return;
+
+    setCustomFeatures((current) =>
+      current.map((item, i) => (i === index ? feature : item)),
+    );
+
+    setEditingFeatureIndex(null);
+
+    if (index === customFeatures.length - 1) {
+      setCustomFeatures((current) => [...current, ""]);
+      setEditingFeatureIndex(customFeatures.length);
+    }
   }
 
   return (
@@ -294,7 +396,80 @@ function AddPropertyPage() {
                 />
               </div>
             </div>
+
+            {/* Additional Custom Features */}
+            <div className="mt-8 border-t border-gray-100 pt-6">
+              <div>
+                <h3 className="font-semibold text-[#252925]">Other Features</h3>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Add any additional features of your property.
+                </p>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {customFeatures.map((feature, index) => {
+                  const isEditing = editingFeatureIndex === index;
+
+                  return (
+                    <div key={index} className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={feature}
+                        readOnly={!isEditing}
+                        onChange={(event) =>
+                          updateCustomFeature(index, event.target.value)
+                        }
+                        onFocus={() => setEditingFeatureIndex(index)}
+                        placeholder="e.g. Swimming pool, Solar power..."
+                        className={`w-full rounded-xl border px-4 py-3 outline-none transition ${
+                          isEditing
+                            ? "border-[#174C3C] bg-white"
+                            : "border-gray-200 bg-gray-50"
+                        }`}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isEditing
+                            ? confirmCustomFeature(index)
+                            : setEditingFeatureIndex(index)
+                        }
+                        disabled={isEditing && !feature.trim()}
+                        className="shrink-0 rounded-lg bg-[#174C3C]/10 px-4 py-3 text-sm font-semibold text-[#174C3C] transition hover:bg-[#174C3C]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isEditing ? "Add" : "Edit"}
+                      </button>
+
+                      {isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => removeCustomFeature(index)}
+                          className="shrink-0 rounded-lg p-3 text-red-500 hover:bg-red-50"
+                          aria-label={`Remove feature ${index + 1}`}
+                        >
+                          <X size={18} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {customFeatures.length === 0 && (
+                <button
+                  type="button"
+                  onClick={addCustomFeature}
+                  className="mt-4 rounded-lg bg-[#174C3C]/10 px-4 py-2 text-sm font-semibold text-[#174C3C] hover:bg-[#174C3C]/20"
+                >
+                  + Add Feature
+                </button>
+              )}
+            </div>
           </section>
+
+          {/* Listing Details */}
 
           {/* Listing Details */}
           <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
@@ -391,7 +566,6 @@ function AddPropertyPage() {
                 multiple
                 onChange={handleImageChange}
                 className="hidden"
-                required
               />
             </label>
 
@@ -410,8 +584,8 @@ function AddPropertyPage() {
                       onClick={() =>
                         setExistingImages((current) =>
                           current.filter(
-                            (_, imageIndex) => imageIndex !== index
-                          )
+                            (_, imageIndex) => imageIndex !== index,
+                          ),
                         )
                       }
                       className="absolute right-2 top-2 rounded-full bg-white p-1.5 text-red-600 shadow"
@@ -432,7 +606,7 @@ function AddPropertyPage() {
                       type="button"
                       onClick={() =>
                         setImages((currentImages) =>
-                          currentImages.filter((_, i) => i !== index)
+                          currentImages.filter((_, i) => i !== index),
                         )
                       }
                       className="absolute right-2 top-2 rounded-full bg-white p-1.5 text-red-500 shadow"

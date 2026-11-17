@@ -22,18 +22,30 @@ function HouseFinderDashboard() {
     {
       title: "Saved Properties",
       value: savedProperties.length,
+      description:
+        savedProperties.length === 0
+          ? "You haven't saved any properties yet."
+          : "Properties saved for later.",
       icon: Bookmark,
       link: "/saved",
     },
     {
       title: "Inspections",
       value: inspections.length,
+      description:
+        inspections.length === 0
+          ? "Your inspection bookings will appear here."
+          : "View your property inspections.",
       icon: CalendarDays,
       link: "/activity",
     },
     {
       title: "Service Requests",
       value: serviceRequests.length,
+      description:
+        serviceRequests.length === 0
+          ? "You haven't made any service requests yet."
+          : "Track your home service requests.",
       icon: ClipboardList,
       link: "/activity",
     },
@@ -61,7 +73,7 @@ function HouseFinderDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-5 py-10 sm:px-8">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-8 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10">
           <p className="text-sm font-semibold uppercase tracking-wider text-[#174C3C]">
@@ -85,7 +97,7 @@ function HouseFinderDashboard() {
               <Link
                 key={stat.title}
                 to={stat.link}
-                className="rounded-2xl bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                className="min-w-0 rounded-2xl bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:p-6"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#174C3C]/10">
@@ -99,7 +111,13 @@ function HouseFinderDashboard() {
                   {stat.value}
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-500">{stat.title}</p>
+                <p className="mt-1 text-sm font-medium text-gray-700">
+                  {stat.title}
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-gray-500">
+                  {stat.description}
+                </p>
               </Link>
             );
           })}
@@ -116,14 +134,16 @@ function HouseFinderDashboard() {
                 <Link
                   key={action.title}
                   to={action.link}
-                  className="flex items-center gap-4 rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md"
+                  className="flex min-w-0 items-start gap-3 rounded-2xl bg-white p-5 shadow-sm transition hover:shadow-md sm:items-center sm:gap-4 sm:p-6"
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#174C3C]/10">
                     <Icon size={23} className="text-[#174C3C]" />
                   </div>
 
-                  <div>
-                    <h3 className="font-bold text-[#252925]">{action.title}</h3>
+                  <div className="min-w-0">
+                    <h3 className="wrap-break-word font-bold text-[#252925]">
+                      {action.title}
+                    </h3>
 
                     <p className="mt-1 text-sm text-gray-500">
                       {action.description}
@@ -135,7 +155,7 @@ function HouseFinderDashboard() {
           </div>
         </section>
 
-        <section className="mt-12 rounded-2xl bg-[#174C3C] p-8 text-white sm:p-10">
+        <section className="mt-10 rounded-2xl bg-[#174C3C] p-5 text-white sm:mt-12 sm:p-8 md:p-10">
           <div className="max-w-xl">
             <House size={32} />
 

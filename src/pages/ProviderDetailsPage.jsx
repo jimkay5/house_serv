@@ -7,16 +7,33 @@ import {
   Phone,
   MessageCircle,
   ShieldCheck,
+  Star,
 } from "lucide-react";
 
 import services from "../data/services";
 
 import { useMarketplaceProviders } from "../context/useMarketplaceProviders";
+import { useReviews } from "../context/useReviews";
 
 function ProviderDetailsPage() {
   const { id } = useParams();
 
   const providers = useMarketplaceProviders();
+  const { reviews } = useReviews();
+
+  const providerReviews = reviews.filter(
+    (review) => String(review.providerId) === String(id),
+  );
+
+  const averageRating =
+    providerReviews.length > 0
+      ? (
+          providerReviews.reduce(
+            (total, review) => total + Number(review.rating),
+            0,
+          ) / providerReviews.length
+        ).toFixed(1)
+      : "0.0";
 
   const provider = providers.find((item) => String(item.id) === String(id));
 
@@ -42,7 +59,7 @@ function ProviderDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-6 py-16">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-10 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-5xl">
         <Link
           to={`/services/${provider.serviceId}/providers`}
@@ -52,7 +69,7 @@ function ProviderDetailsPage() {
           Back to providers
         </Link>
 
-        <div className="mt-10 rounded-3xl bg-white p-8 shadow-sm md:p-12">
+        <div className="mt-10 min-w-0 rounded-3xl bg-white p-5 shadow-sm sm:p-8 md:p-12">
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#174C3C]/10 text-[#174C3C]">
             <BriefcaseBusiness size={36} />
           </div>
@@ -65,26 +82,41 @@ function ProviderDetailsPage() {
             {provider.name}
           </h1>
 
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1">
+              <Star size={20} fill="#D9A441" color="#D9A441" />
+              <span className="font-bold text-[#252925]">{averageRating}</span>
+            </div>
+
+            <span className="text-sm text-gray-500">
+              {providerReviews.length}{" "}
+              {providerReviews.length === 1 ? "review" : "reviews"}
+            </span>
+          </div>
+
           <p className="mt-5 max-w-2xl leading-7 text-gray-600">
             {provider.description}
           </p>
 
-          <div className="mt-8 grid gap-5 border-y border-gray-100 py-7 sm:grid-cols-2">
-            <div className="flex items-center gap-3">
-              <MapPin className="text-[#174C3C]" size={21} />
-              <div>
+          <div className="mt-8 grid min-w-0 gap-5 border-y border-gray-100 py-7 sm:grid-cols-2">
+            <div className="flex min-w-0 items-start gap-3">
+              <MapPin className="mt-0.5 shrink-0 text-[#174C3C]" size={21} />
+              <div className="min-w-0">
                 <p className="text-xs text-gray-400">Location</p>
-                <p className="font-semibold text-[#252925]">
+                <p className="wrap-break-word font-semibold text-[#252925]">
                   {provider.location}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <BriefcaseBusiness className="text-[#174C3C]" size={21} />
-              <div>
+            <div className="flex min-w-0 items-start gap-3">
+              <BriefcaseBusiness
+                className="mt-0.5 shrink-0 text-[#174C3C]"
+                size={21}
+              />
+              <div className="min-w-0">
                 <p className="text-xs text-gray-400">Experience</p>
-                <p className="font-semibold text-[#252925]">
+                <p className="wrap-break-word font-semibold text-[#252925]">
                   {provider.experience}
                 </p>
               </div>
@@ -152,6 +184,67 @@ function ProviderDetailsPage() {
           >
             Request this service
           </Link>
+
+          <div className="mt-12 border-t border-gray-100 pt-8">
+            <h2 className="text-2xl font-bold text-[#252925]">
+              Customer reviews
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Feedback from customers who have used this provider's services.
+            </p>
+
+            {providerReviews.length === 0 ? (
+              <div className="mt-6 rounded-xl bg-[#F7F3EA] p-6 text-center">
+                <p className="font-medium text-[#252925]">No reviews yet</p>
+                <p className="mt-2 text-sm text-gray-500">
+                  Customer reviews will appear here after completed services.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:gap-5">
+                {providerReviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="min-w-70 max-w-[320px] shrink-0 snap-start rounded-xl border border-gray-100 p-5 sm:min-w-[320px]"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((number) => (
+                          <Star
+                            key={number}
+                            size={17}
+                            fill={
+                              number <= Number(review.rating)
+                                ? "#D9A441"
+                                : "none"
+                            }
+                            color={
+                              number <= Number(review.rating)
+                                ? "#D9A441"
+                                : "#D1D5DB"
+                            }
+                          />
+                        ))}
+                      </div>
+
+                      <span className="text-xs text-gray-400">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <p className="mt-4 leading-7 text-gray-700">
+                      {review.comment}
+                    </p>
+
+                    <p className="mt-4 text-sm font-semibold text-[#174C3C]">
+                      House&Serv customer
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <p className="mt-6 text-xs leading-5 text-gray-400">

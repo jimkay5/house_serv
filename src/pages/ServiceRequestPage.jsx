@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useServiceRequests } from "../context/useServiceRequests";
 import { ArrowLeft, ClipboardList, MapPin } from "lucide-react";
 
@@ -13,11 +14,42 @@ function ServiceRequestPage() {
 
   const navigate = useNavigate();
   const { addServiceRequest } = useServiceRequests();
+  const [message, setMessage] = useState("");
 
   function handleSubmit(event) {
     event.preventDefault();
+    setMessage("");
 
     const formData = new FormData(event.currentTarget);
+
+    const fullName = formData.get("fullName").trim();
+    const phone = formData.get("phone").trim();
+    const location = formData.get("location").trim();
+    const description = formData.get("description").trim();
+
+    const phoneDigits = phone.replace(/\D/g, "");
+
+    if (fullName.length < 2 || !/^[\p{L}\s'-]+$/u.test(fullName)) {
+      setMessage("Please enter a valid full name.");
+      return;
+    }
+
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      setMessage("Please enter a valid phone number.");
+      return;
+    }
+
+    if (location.length < 5) {
+      setMessage("Please provide a more detailed service location.");
+      return;
+    }
+
+    if (description.length < 15) {
+      setMessage(
+        "Please describe the service you need in at least 15 characters.",
+      );
+      return;
+    }
 
     addServiceRequest({
       providerId: provider.id,
@@ -29,10 +61,10 @@ function ServiceRequestPage() {
       serviceId: service.id,
       serviceName: service.name,
 
-      customerName: formData.get("fullName"),
-      phone: formData.get("phone"),
-      location: formData.get("location"),
-      description: formData.get("description"),
+      customerName: fullName,
+      phone,
+      location,
+      description,
     });
 
     navigate("/activity");
@@ -62,7 +94,7 @@ function ServiceRequestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-6 py-16">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-10 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
         <Link
           to={`/providers/${provider.id}`}
@@ -87,8 +119,8 @@ function ServiceRequestPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white p-7 shadow-sm md:p-10">
-          <div className="rounded-xl bg-[#F7F3EA] p-5">
+        <div className="rounded-2xl bg-white p-5 shadow-sm sm:p-7 md:p-10">
+          <div className="min-w-0 rounded-xl bg-[#F7F3EA] p-4 sm:p-5">
             <div className="flex items-center gap-3">
               <ClipboardList className="text-[#174C3C]" size={24} />
 
@@ -98,7 +130,7 @@ function ServiceRequestPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-3">
+            <div className="mt-4 flex min-w-0 items-start gap-3">
               <MapPin className="text-[#174C3C]" size={21} />
 
               <div>
@@ -110,6 +142,11 @@ function ServiceRequestPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            {message && (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+                {message}
+              </p>
+            )}
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#252925]">
                 Your full name
@@ -147,6 +184,7 @@ function ServiceRequestPage() {
                 type="text"
                 name="location"
                 placeholder="Where do you need the service?"
+                required
                 className="w-full rounded-lg border border-gray-200 px-4 py-3 outline-none transition focus:border-[#174C3C]"
               />
             </div>
@@ -165,7 +203,7 @@ function ServiceRequestPage() {
               />
             </div>
 
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
               <h3 className="font-semibold text-amber-900">
                 Your protection matters to us
               </h3>

@@ -10,7 +10,7 @@ function PropertiesPage() {
   const { agentProperties } = useProperties();
 
   const approvedAgentProperties = agentProperties.filter(
-    (property) => property.listingStatus === "Approved"
+    (property) => property.listingStatus === "Approved",
   );
 
   const allProperties = [...properties, ...approvedAgentProperties];
@@ -18,18 +18,25 @@ function PropertiesPage() {
 
   const [location, setLocation] = useState(searchParams.get("location") || "");
 
+  const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
+
+  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+
   const [listingType, setListingType] = useState(
-    searchParams.get("type") || "All"
+    searchParams.get("type") || "All",
   );
 
   const [category, setCategory] = useState(
-    searchParams.get("category") || "All"
+    searchParams.get("category") || "All",
   );
 
   const filteredProperties = allProperties.filter((property) => {
-    const matchesLocation = property.location
-      .toLowerCase()
-      .includes(location.toLowerCase());
+    const searchTerm = location.trim().toLowerCase();
+
+    const matchesSearch =
+      property.name?.toLowerCase().includes(searchTerm) ||
+      property.location?.toLowerCase().includes(searchTerm) ||
+      property.type?.toLowerCase().includes(searchTerm);
 
     const matchesType =
       listingType === "All" ||
@@ -39,7 +46,23 @@ function PropertiesPage() {
       category === "All" ||
       property.type?.toLowerCase() === category.toLowerCase().replace(/s$/, "");
 
-    return matchesLocation && matchesType && matchesCategory;
+    const propertyPrice = Number(
+      String(property.price || "").replace(/[^\d.]/g, ""),
+    );
+
+    const matchesMinPrice =
+      minPrice === "" || propertyPrice >= Number(minPrice);
+
+    const matchesMaxPrice =
+      maxPrice === "" || propertyPrice <= Number(maxPrice);
+
+    return (
+      matchesSearch &&
+      matchesType &&
+      matchesCategory &&
+      matchesMinPrice &&
+      matchesMaxPrice
+    );
   });
 
   function handleSearch(e) {
@@ -49,11 +72,13 @@ function PropertiesPage() {
       location,
       type: listingType,
       category,
+      minPrice,
+      maxPrice,
     });
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-6 py-16">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-10 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-7xl">
         {/* Page heading */}
         <div className="mb-10">
@@ -74,9 +99,9 @@ function PropertiesPage() {
         {/* Search and filters */}
         <form
           onSubmit={handleSearch}
-          className="mb-10 flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm md:flex-row md:items-center"
+          className="mb-10 grid grid-cols-1 gap-4 rounded-2xl bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-3"
         >
-          <div className="flex flex-1 items-center gap-3 rounded-lg border border-gray-200 px-4">
+          <div className="flex min-w-0 items-center gap-3 rounded-lg border border-gray-200 px-4 sm:col-span-2 lg:col-span-1">
             <Search size={19} className="text-[#174C3C]" />
 
             <input
@@ -118,16 +143,38 @@ function PropertiesPage() {
             </select>
           </div>
 
+          <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4">
+            <input
+              type="number"
+              min="0"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              placeholder="Min price (₦)"
+              className="w-full min-w-0 bg-transparent py-4 text-sm outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4">
+            <input
+              type="number"
+              min="0"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              placeholder="Max price (₦)"
+              className="w-full min-w-0 bg-transparent py-4 text-sm outline-none"
+            />
+          </div>
+
           <button
             type="submit"
-            className="rounded-lg bg-[#174C3C] px-8 py-4 text-sm font-semibold text-white transition hover:bg-[#10382C]"
+            className="w-full rounded-lg bg-[#174C3C] px-8 py-4 text-sm font-semibold text-white transition hover:bg-[#10382C]"
           >
             Apply filters
           </button>
         </form>
 
         {/* Results heading */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-bold text-[#252925]">
               Available properties
@@ -141,7 +188,7 @@ function PropertiesPage() {
 
         {/* Property results */}
         {filteredProperties.length > 0 ? (
-          <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7">
             {filteredProperties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
@@ -151,24 +198,32 @@ function PropertiesPage() {
             <House size={42} className="mx-auto text-[#174C3C]/50" />
 
             <h3 className="mt-5 text-xl font-bold text-[#252925]">
-              No properties found
+              {allProperties.length === 0
+                ? "No properties available yet"
+                : "No matching properties found"}
             </h3>
 
             <p className="mt-2 text-sm text-gray-500">
-              Try another location or change your property filters.
+              {allProperties.length === 0
+                ? "We're working on bringing more properties to the platform. Please check back soon."
+                : "Try another location, adjust your price range or change your property filters."}
             </p>
 
-            <button
-              onClick={() => {
-                setLocation("");
-                setListingType("All");
-                setCategory("All");
-                setSearchParams({});
-              }}
-              className="mt-6 rounded-lg bg-[#174C3C] px-6 py-3 text-sm font-semibold text-white"
-            >
-              Clear filters
-            </button>
+            {allProperties.length > 0 && (
+              <button
+                onClick={() => {
+                  setLocation("");
+                  setListingType("All");
+                  setCategory("All");
+                  setMinPrice("");
+                  setMaxPrice("");
+                  setSearchParams({});
+                }}
+                className="mt-6 rounded-lg bg-[#174C3C] px-6 py-3 text-sm font-semibold text-white"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         )}
       </div>

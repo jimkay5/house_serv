@@ -1,21 +1,24 @@
 import { Link } from "react-router-dom";
 import {
   ClipboardList,
-  UserRound,
   ArrowRight,
   ShieldCheck,
+  CheckCircle,
 } from "lucide-react";
+
 import { useProviderApplications } from "../context/useProviderApplications";
+import { useServiceRequests } from "../context/useServiceRequests";
 
 function ServiceProviderDashboard() {
   const { applications } = useProviderApplications();
+  const { serviceRequests } = useServiceRequests();
 
   const user = JSON.parse(localStorage.getItem("houseServUser") || "{}");
 
   const providerApplication = applications.find(
     (application) =>
       application.id === user.providerApplicationId ||
-      application.email === user.email
+      application.email === user.email,
   );
 
   const applicationStatus =
@@ -23,8 +26,29 @@ function ServiceProviderDashboard() {
     user.providerApplicationStatus ||
     "Pending Verification";
 
+  const myServiceRequests = serviceRequests.filter(
+    (request) =>
+      (providerApplication?.id &&
+        request.providerApplicationId === providerApplication.id) ||
+      (user.email &&
+        request.providerEmail?.toLowerCase() === user.email.toLowerCase()),
+  );
+
+  const pendingRequests = myServiceRequests.filter(
+    (request) => request.status === "Pending",
+  ).length;
+
+  const activeRequests = myServiceRequests.filter(
+    (request) =>
+      request.status === "Accepted" || request.status === "In Progress",
+  ).length;
+
+  const completedRequests = myServiceRequests.filter(
+    (request) => request.status === "Completed",
+  ).length;
+
   return (
-    <div className="min-h-screen bg-[#F7F3EA] px-6 py-10">
+    <div className="min-h-screen bg-[#F7F3EA] px-4 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-10">
           <p className="text-sm font-semibold text-[#174C3C]">
@@ -40,13 +64,13 @@ function ServiceProviderDashboard() {
           </p>
         </div>
 
-        <div className="mb-8 rounded-2xl border border-[#174C3C]/10 bg-white p-7">
-          <div className="flex items-start gap-4">
+        <div className="mb-8 min-w-0 rounded-2xl border border-[#174C3C]/10 bg-white p-5 sm:p-7">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
             <div className="rounded-xl bg-[#174C3C]/10 p-3">
               <ShieldCheck className="text-[#174C3C]" size={28} />
             </div>
 
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               {user.profileComplete ? (
                 <>
                   <div className="flex flex-wrap items-center gap-3">
@@ -71,8 +95,8 @@ function ServiceProviderDashboard() {
                         applicationStatus === "Approved"
                           ? "bg-green-100 text-green-700"
                           : applicationStatus === "Rejected"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-amber-100 text-amber-700"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-amber-100 text-amber-700"
                       }`}
                     >
                       {applicationStatus}
@@ -113,37 +137,84 @@ function ServiceProviderDashboard() {
           </div>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div className="rounded-2xl bg-white p-7 shadow-sm">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Total Requests */}
+          <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-7">
             <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[#174C3C]/10">
               <ClipboardList size={25} className="text-[#174C3C]" />
             </div>
 
-            <h3 className="text-lg font-bold text-[#252925]">
-              Service Requests
+            <h3 className="text-3xl font-bold text-[#252925]">
+              {myServiceRequests.length}
             </h3>
 
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              View and manage requests from customers once your professional
-              account has been approved.
-            </p>
+            <p className="mt-2 text-sm text-gray-500">Total Requests</p>
           </div>
 
-          <div className="rounded-2xl bg-white p-7 shadow-sm">
-            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[#174C3C]/10">
-              <UserRound size={25} className="text-[#174C3C]" />
+          {/* Pending Requests */}
+          <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-7">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100">
+              <ClipboardList size={25} className="text-amber-600" />
             </div>
 
-            <h3 className="text-lg font-bold text-[#252925]">
-              Professional Profile
+            <h3 className="text-3xl font-bold text-[#252925]">
+              {pendingRequests}
             </h3>
 
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              Add your business information, qualifications, experience and
-              previous work.
-            </p>
+            <p className="mt-2 text-sm text-gray-500">Pending Requests</p>
+          </div>
+
+          {/* Active Requests */}
+          <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-7">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
+              <ClipboardList size={25} className="text-blue-600" />
+            </div>
+
+            <h3 className="text-3xl font-bold text-[#252925]">
+              {activeRequests}
+            </h3>
+
+            <p className="mt-2 text-sm text-gray-500">Active Requests</p>
+          </div>
+
+          {/* Completed Requests */}
+          <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm sm:p-7">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-green-100">
+              <CheckCircle size={25} className="text-green-600" />
+            </div>
+
+            <h3 className="text-3xl font-bold text-[#252925]">
+              {completedRequests}
+            </h3>
+
+            <p className="mt-2 text-sm text-gray-500">Completed Requests</p>
           </div>
         </div>
+
+        {myServiceRequests.length === 0 && (
+          <div className="mt-6 rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-10 text-center sm:px-6 sm:py-12">
+            <ClipboardList size={40} className="mx-auto text-[#174C3C]/50" />
+
+            <h3 className="mt-4 text-lg font-bold text-[#252925]">
+              No service requests yet
+            </h3>
+
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+              Customer requests will appear here once your professional profile
+              has been approved and customers start requesting your services.
+            </p>
+
+            {applicationStatus === "Approved" && (
+              <Link
+                to="/dashboard/provider/requests"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#174C3C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#103A2D]"
+              >
+                View Requests
+                <ArrowRight size={17} />
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
